@@ -1,2 +1,2 @@
 # EmojiNK
-Show emoji in your PNX server!
+Show emoji on your Nukkit server

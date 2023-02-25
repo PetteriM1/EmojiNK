@@ -1,15 +1,16 @@
 package cn.daogecmd.emojink.api;
 
+import cn.daogecmd.emojink.SpawnParticleEffectPacketC;
 import cn.nukkit.Player;
 import cn.nukkit.Server;
 import cn.nukkit.entity.Entity;
 import cn.nukkit.level.DimensionEnum;
-import cn.nukkit.network.protocol.SpawnParticleEffectPacket;
 import lombok.Getter;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public final class EmojiAPI {
     private static final Map<String, double[]> EMOJI_POS = new HashMap<>();
@@ -62,16 +63,14 @@ public final class EmojiAPI {
     //key: emoji_id, value: emoji_name
     @Getter
     private final Map<String, String> emojiList;
-    private final Server server;
-    
+
     private EmojiAPI(Map<String, String> emojiList) {
         API = this;
-        for (var id : EMOJI_POS.keySet()) {
-            var name = emojiList.getOrDefault(id, id);
+        for (String id : EMOJI_POS.keySet()) {
+            String name = emojiList.getOrDefault(id, id);
             emojiList.put(id, name);
         }
         this.emojiList = emojiList;
-        server = Server.getInstance();
     }
 
     public static void initAPI(Map<String, String> emojiList) {
@@ -81,25 +80,27 @@ public final class EmojiAPI {
     }
 
     public void sendEmoji(Entity entity, String emojiId) {
-        if (!EMOJI_POS.containsKey(emojiId))
+        if (!EMOJI_POS.containsKey(emojiId)) {
             return;
-        var viewers = new HashSet<>(entity.getViewers().values());
-        if (entity instanceof Player own)
-            viewers.add(own);
-        if (viewers.isEmpty())
+        }
+        Set<Player> viewers = new HashSet<>(entity.getViewers().values());
+        if (entity instanceof Player) {
+            viewers.add((Player) entity);
+        }
+        if (viewers.isEmpty()) {
             return;
+        }
         double[] pos = EMOJI_POS.get(emojiId);
-        var pk = new SpawnParticleEffectPacket();
+        SpawnParticleEffectPacketC pk = new SpawnParticleEffectPacketC();
         pk.dimensionId = DimensionEnum.OVERWORLD.getDimensionData().getDimensionId();
         pk.uniqueEntityId = -1;
         pk.position = entity.getPosition().add(0, entity.getHeight() + 1, 0).asVector3f();
         pk.identifier = "emoji:emoji";
-        pk.molangVariablesJson = new StringBuilder()
-                .append("[{\"name\":\"variable.ix\",\"value\":{\"type\":\"float\",\"value\":")
-                .append(pos[0])
-                .append("}},{\"name\":\"variable.iy\",\"value\":{\"type\":\"float\",\"value\":")
-                .append(pos[1])
-                .append("}}]").toString().describeConstable();
+        pk.molangVariablesJson = java.util.Optional.of("[{\"name\":\"variable.ix\",\"value\":{\"type\":\"float\",\"value\":" +
+                pos[0] +
+                "}},{\"name\":\"variable.iy\",\"value\":{\"type\":\"float\",\"value\":" +
+                pos[1] +
+                "}}]");
         Server.broadcastPacket(viewers, pk);
     }
 }
